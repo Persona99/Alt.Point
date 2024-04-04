@@ -95,6 +95,7 @@ class Client(models.Model):
     dob = models.DateField('День рождения')
     passport = models.OneToOneField(Passport, null=True,
                                     on_delete=models.SET_NULL)
+    children = models.ManyToManyField(Child)
     livingAddress = models.OneToOneField(Address, null=True,
                                          on_delete=models.SET_NULL,
                                          related_name='livingAddress')
@@ -142,7 +143,8 @@ class ClientWithSpouse(models.Model):
 
 
 class ChildClient(models.Model):
-    clild = models.ForeignKey(Child, null=False, on_delete=models.CASCADE)
+    child = models.ForeignKey(Child, null=False,
+                              on_delete=models.CASCADE, related_name='child')
     client = models.ForeignKey(Client, null=False, on_delete=models.CASCADE)
 
 
