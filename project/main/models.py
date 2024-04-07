@@ -10,7 +10,7 @@ class Address(models.Model):
     id = models.UUIDField('Идентификатор', primary_key=True,
                           null=False, default=uuid4)
     zipCode = models.CharField('Почтовый индекс', max_length=100,
-                               editable=False, null=True)
+                               null=True)
     country = models.CharField('Страна', max_length=100, null=True)
     region = models.CharField('Регион, область', max_length=100, null=True)
     city = models.CharField('Город', max_length=100, null=True)
@@ -60,7 +60,7 @@ class Passport(models.Model):
     series = models.CharField('Серия', max_length=10, null=False)
     number = models.CharField('Номер', max_length=10, null=False)
     giver = models.CharField('Кем выдан', max_length=100, null=False)
-    dateIssued = models.DateField('Дата выдачи', null=False)
+    dateIssued = models.DateTimeField('Дата выдачи', null=False)
     createAt = models.DateTimeField(
         'Дата создания', auto_now=True, null=False)
     updateAt = models.DateTimeField(
@@ -74,7 +74,27 @@ class Child(models.Model):
     name = models.CharField('Имя', max_length=100, null=True)
     surname = models.CharField('Фамилия', max_length=100, null=True)
     patronymic = models.CharField('Отчество', max_length=100, null=True)
-    dob = models.DateField('День рождения', null=True)
+    dob = models.DateTimeField('День рождения', null=True)
+
+
+class CommunicationType(models.TextChoices):
+    email = 'email', 'Электронная почта'
+    phone = 'phone', 'Мобильный телефон'
+
+
+class Communication(models.Model):
+    __name__ = 'Средство связи'
+    id = models.UUIDField('Идентификатор', primary_key=True,
+                          null=False, default=uuid4)
+    type = models.CharField('Тип', choices=CommunicationType,
+                            null=False, max_length=100)
+    value = models.CharField('Значение средства связи',
+                             max_length=20, null=False)
+
+
+class Document(models.Model):
+    id = models.UUIDField('Идентификатор', primary_key=True,
+                          null=False, default=uuid4)
 
 
 class EducationType(models.TextChoices):
@@ -92,84 +112,31 @@ class Client(models.Model):
     name = models.CharField('Имя', max_length=100, null=True)
     surname = models.CharField('Фамилия', max_length=100, null=True)
     patronymic = models.CharField('Отчество', max_length=100, null=True)
-    dob = models.DateField('День рождения')
+    dob = models.DateTimeField('День рождения')
     passport = models.OneToOneField(Passport, null=True,
                                     on_delete=models.SET_NULL)
-    children = models.ManyToManyField(Child)
+    children = models.ManyToManyField(
+        Child, related_name='children', blank=True)
+    documentIds = models.ManyToManyField(
+        Document, blank=True, related_name='documents')
     livingAddress = models.OneToOneField(Address, null=True,
                                          on_delete=models.SET_NULL,
                                          related_name='livingAddress')
     regAddress = models.OneToOneField(Address, null=True,
                                       on_delete=models.SET_NULL,
                                       related_name='regAddress')
+    jobs = models.ManyToManyField(Job, blank=True, related_name='jobs')
     typeEducation = models.CharField('Тип образования',
                                      choices=EducationType, max_length=100)
     monIncome = models.DecimalField('Суммарный доход в месяц', max_digits=10,
                                     decimal_places=2, null=True)
     monExpenses = models.DecimalField('Суммарный расход в месяц', max_digits=10,
                                       decimal_places=2, null=True)
+    communications = models.ManyToManyField(
+        Communication, blank=True, related_name='communications')
     createAt = models.DateTimeField(
         'Дата создания', auto_now=True, null=False)
     updateAt = models.DateTimeField(
         'Дата обновления', auto_now=True, null=False)
-
-
-class ClientWithSpouse(models.Model):
-    id = models.UUIDField('Идентификатор', primary_key=True,
-                          null=False, default=uuid4)
-    name = models.CharField('Имя', max_length=100, null=True)
-    surname = models.CharField('Фамилия', max_length=100, null=True)
-    patronymic = models.CharField('Отчество', max_length=100, null=True)
-    dob = models.DateField('День рождения')
-    passport = models.OneToOneField(Passport, null=True,
-                                    on_delete=models.SET_NULL)
-    livingAddress = models.OneToOneField(Address, null=True,
-                                         on_delete=models.SET_NULL,
-                                         related_name='livingAddressWithSpouse')
-    regAddress = models.OneToOneField(Address, null=True,
-                                      on_delete=models.SET_NULL,
-                                      related_name='regAddressWithSpouse')
-    typeEducation = models.CharField('Тип образования',
-                                     choices=EducationType, max_length=100)
-    monIncome = models.DecimalField('Суммарный доход в месяц', max_digits=10,
-                                    decimal_places=2, null=True)
-    monExpenses = models.DecimalField('Суммарный расход в месяц', max_digits=10,
-                                      decimal_places=2, null=True)
-    createAt = models.DateTimeField(
-        'Дата создания', auto_now=True, null=False)
-    updateAt = models.DateTimeField(
-        'Дата обновления', auto_now=True, null=False)
-    spouse = models.OneToOneField(Client, null=True, on_delete=models.SET_NULL)
-
-
-class ChildClient(models.Model):
-    child = models.ForeignKey(Child, null=False,
-                              on_delete=models.CASCADE, related_name='child')
-    client = models.ForeignKey(Client, null=False, on_delete=models.CASCADE)
-
-
-class Document(models.Model):
-    id = models.UUIDField('Идентификатор', primary_key=True,
-                          null=False, default=uuid4)
-    client = models.ForeignKey(Client, null=True, on_delete=models.SET_NULL)
-
-
-class ClientJob(models.Model):
-    client = models.ForeignKey(Client, null=False, on_delete=models.CASCADE)
-    job = models.ForeignKey(Job, null=False, on_delete=models.CASCADE)
-
-
-class CommunicationType(models.TextChoices):
-    email = 'email', 'Электронная почта'
-    phone = 'phone', 'Мобильный телефон'
-
-
-class Comunication(models.Model):
-    __name__ = 'Средство связи'
-    id = models.UUIDField('Идентификатор', primary_key=True,
-                          null=False, default=uuid4)
-    type = models.CharField('Тип', choices=CommunicationType,
-                            null=False, max_length=100)
-    value = models.CharField('Значение средства связи',
-                             max_length=20, null=False)
-    client = models.ForeignKey(Client, null=True, on_delete=models.SET_NULL)
+    spouse = models.OneToOneField(
+        'self', null=True, related_name='client_spouse', on_delete=models.SET_NULL)
