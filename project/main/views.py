@@ -1,5 +1,5 @@
 from rest_framework.views import APIView, Response, Request
-from .serializers import GetClientsResponse, PostClientRequest
+from .serializers import GetClientsResponse, PostClientRequest, PatchClientSerializer
 from .models import Client
 # Create your views here.
 
@@ -27,9 +27,19 @@ class Clients(APIView):
 class OneClient(APIView):
     def get(self, request: Request) -> Response:
         id = request.query_params.get('clientId')
-
         client = Client.objects.filter(id=id).first()
         if not client:
             return Response(data={'status': 404, 'code': 'ENTITY_NOT_FOUND'}, status=404)
         client = GetClientsResponse(client)
         return Response(data=client.data)
+
+    def patch(self, request: Request) -> Response:
+        id = request.query_params.get('clientId')
+        client = Client.objects.filter(id=id).first()
+        if not client:
+            return Response(data={'status': 404, 'code': 'ENTITY_NOT_FOUND'}, status=404)
+        client_serializer = PatchClientSerializer(
+            data=request.data, instance=client)
+        client_serializer.is_valid(raise_exception=True)
+        client_serializer.save()
+        return Response(status=200)
