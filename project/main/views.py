@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from rest_framework.views import APIView, Response, Request
-from .serializers import GetClientsResponse
+from .serializers import GetClientsResponse, PostClientRequest
 from .models import Client
 # Create your views here.
 
@@ -16,3 +16,10 @@ class Clients(APIView):
             'data': serializer.data
         }
         return Response(data=data, status=200)
+
+    def post(self, request: Request) -> Response:
+        client = PostClientRequest(data=request.data)
+        if not client.is_valid():
+            return Response(data=client.errors, status=422)
+        client.save()
+        return Response(data={client.data['id']}, status=201)
