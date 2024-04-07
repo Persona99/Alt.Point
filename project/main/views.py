@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from rest_framework.views import APIView, Response, Request
 from .serializers import GetClientsResponse, PostClientRequest
 from .models import Client
@@ -23,3 +22,14 @@ class Clients(APIView):
             return Response(data=client.errors, status=422)
         client.save()
         return Response(data={client.data['id']}, status=201)
+
+
+class OneClient(APIView):
+    def get(self, request: Request) -> Response:
+        id = request.query_params.get('clientId')
+
+        client = Client.objects.filter(id=id).first()
+        if not client:
+            return Response(data={'status': 404, 'code': 'ENTITY_NOT_FOUND'}, status=404)
+        client = GetClientsResponse(client)
+        return Response(data=client.data)

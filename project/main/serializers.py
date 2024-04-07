@@ -82,7 +82,7 @@ class PostClientRequest(serializers.ModelSerializer):
         model = Client
         fields = '__all__'
 
-    def _create_client(self, validated_data) -> Client:
+    def _get_data(self, validated_data) -> dict:
         children = validated_data.pop('children')
         documents = validated_data.pop('documentIds')
         jobs = validated_data.pop('jobs')
@@ -90,21 +90,33 @@ class PostClientRequest(serializers.ModelSerializer):
         passport = validated_data.pop('passport')
         livingAddress = validated_data.pop('livingAddress')
         regAddress = validated_data.pop('regAddress')
-        livingAddress = Address.objects.create(**livingAddress)
-        regAddress = Address.objects.create(**regAddress)
-        passport = Passport.objects.create(**passport)
-        client = Client.objects.create(passport=passport, livingAddress=livingAddress,
-                                       regAddress=regAddress, **validated_data)
+        return {'many_to_many': {'children': children, 'documents': documents, 'jobs': jobs,
+                'communications': communications, }, 'passport': passport, 'livingAddress': livingAddress,
+                'regAddress': regAddress, 'validated_data': validated_data}
 
-        if children:
-            client.children.add(Child(**child) for child in children)
-        if documents:
-            client.documentIds.add(Child(**document) for document in documents)
-        if jobs:
-            client.jobs.add(Child(**job) for job in jobs)
-        if communications:
+    def _add_many_to_many_rel_fields(self, client: Client, data: dict) -> Client:
+        print(data)
+        if data['children']:
+            client.children.add(Child(**child) for child in data['children'])
+        if data['documents']:
+            client.documentIds.add(Child(**document)
+                                   for document in data['documents'])
+        if data['jobs']:
+            client.jobs.add(Child(**job) for job in data['jobs'])
+        if data['communications']:
             client.communications.add(Child(**communication)
-                                      for communication in communications)
+                                      for communication in data['communications'])
+        return client
+
+    def _create_client(self, validated_data) -> Client:
+        data: dict = self._get_data(validated_data)
+        livingAddress = Address.objects.create(**data['livingAddress'])
+        regAddress = Address.objects.create(**data['regAddress'])
+        passport = Passport.objects.create(**data['passport'])
+        client = Client.objects.create(passport=passport, livingAddress=livingAddress,
+                                       regAddress=regAddress, **data['validated_data'])
+        client = self._add_many_to_many_rel_fields(
+            client, data['many_to_many'])
         return client
 
     def create(self, validated_data) -> Client:

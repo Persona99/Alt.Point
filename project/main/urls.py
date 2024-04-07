@@ -1,7 +1,7 @@
-from django.contrib import admin
-from django.urls import path, include
-from .views import Clients
+from django.urls import path
+from .views import Clients, OneClient
 
 urlpatterns = [
-    path('clients/', Clients.as_view())
+    path('clients/', Clients.as_view()),
+    path('client/', OneClient.as_view())
 ]
