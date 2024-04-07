@@ -138,5 +138,6 @@ class Client(models.Model):
         'Дата создания', auto_now=True, null=False)
     updateAt = models.DateTimeField(
         'Дата обновления', auto_now=True, null=False)
+    deleteAt = models.DateTimeField('Дата удаления', null=True, default=None)
     spouse = models.OneToOneField(
         'self', null=True, related_name='client_spouse', on_delete=models.SET_NULL)
